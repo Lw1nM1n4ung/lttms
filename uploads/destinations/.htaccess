@@ -1,0 +1,2 @@
+Allow from all
+php_flag engine off
