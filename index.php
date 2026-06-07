@@ -55,13 +55,15 @@ $destinations = getActiveDestinations();
                     <?php if (!empty($pkg['image_url'])): ?>
                         <img src="<?= BASE_URL ?>/uploads/packages/<?= sanitize($pkg['image_url']) ?>" alt="<?= sanitize($pkg['title']) ?>" onerror="this.style.display='none'">
                     <?php endif; ?>
-                    <span class="package-duration"><?= $pkg['duration_days'] ?> <?= t('days') ?></span>
+                    <span class="package-duration"><?= formatDuration($pkg['duration_days']) ?></span>
+                    <?php if ($range = formatDateRange($pkg['start_date'] ?? null, $pkg['end_date'] ?? null)): ?>
+                        <span class="badge">&#128197; <?= $range ?></span>
+                    <?php endif; ?>
                 </div>
                 <div class="package-body">
                     <h3><?= sanitize($pkg['title']) ?></h3>
                     <p class="package-destination">&#128205; <?= sanitize($pkg['destination']) ?></p>
                     <div class="package-meta">
-                        <span class="package-rating"><?= renderStars((float)$pkg['rating_avg']) ?> <?= number_format($pkg['rating_avg'], 1) ?></span>
                         <span class="package-slots"><?= $pkg['remaining_slots'] ?> <?= t('remaining_slots') ?></span>
                     </div>
                     <div class="package-footer">

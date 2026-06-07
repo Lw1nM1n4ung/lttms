@@ -29,12 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $max_slots    = (int)($_POST['max_slots'] ?? 20);
         $hotel_id     = !empty($_POST['hotel_id']) ? (int)$_POST['hotel_id'] : null;
         $transport_id = !empty($_POST['transportation_id']) ? (int)$_POST['transportation_id'] : null;
+        $start_date  = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+        $end_date    = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
         if (empty($title)) $errors[] = 'Package title is required.';
         if (empty($destination)) $errors[] = 'Destination is required.';
         if ($duration < 1) $errors[] = 'Duration must be at least 1 day.';
         if ($price < 1000) $errors[] = 'Price must be at least 1,000 MMK.';
         if ($max_slots < 1) $errors[] = 'Must have at least 1 slot.';
+        if ($start_date && $end_date && $end_date < $start_date) $errors[] = t('err_pkg_end_before_start');
 
         $imageFile = null;
         if (!empty($_FILES['package_image']) && $_FILES['package_image']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -46,10 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($errors)) {
             $stmt = $pdo->prepare(
-                "INSERT INTO packages (agent_id, title, destination, description, duration_days, price_per_person, max_slots, remaining_slots, hotel_id, transportation_id, image_url)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO packages (agent_id, title, destination, description, duration_days, start_date, end_date, price_per_person, max_slots, remaining_slots, hotel_id, transportation_id, image_url)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
-            $stmt->execute([$agentId, $title, $destination, $description, $duration, $price, $max_slots, $max_slots, $hotel_id, $transport_id, $imageFile]);
+            $stmt->execute([$agentId, $title, $destination, $description, $duration, $start_date, $end_date, $price, $max_slots, $max_slots, $hotel_id, $transport_id, $imageFile]);
             setFlash('Package created successfully!');
             redirect(BASE_URL . '/agent/packages.php');
         }
@@ -113,6 +116,20 @@ require_once __DIR__ . '/../includes/header.php';
 
             <div class="form-row">
                 <div class="form-group">
+                    <label for="start_date"><?= t('start_date') ?></label>
+                    <input type="date" name="start_date" id="start_date" class="form-control"
+                           value="<?= sanitize($_POST['start_date'] ?? '') ?>">
+                </div>
+                <div class="form-group">
+                    <label for="end_date"><?= t('end_date') ?></label>
+                    <input type="date" name="end_date" id="end_date" class="form-control"
+                           value="<?= sanitize($_POST['end_date'] ?? '') ?>">
+                </div>
+            </div>
+            <small><?= t('pkg_date_hint') ?></small>
+
+            <div class="form-row">
+                <div class="form-group">
                     <label for="hotel_id"><?= t('pkg_hotel') ?></label>
                     <select name="hotel_id" id="hotel_id" class="form-control">
                         <option value="">— <?= t('pkg_none') ?> —</option>
@@ -122,7 +139,6 @@ require_once __DIR__ . '/../includes/header.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <small><a href="<?= BASE_URL ?>/agent/hotels.php"><?= t('nav_hotels') ?></a></small>
                 </div>
                 <div class="form-group">
                     <label for="transportation_id"><?= t('pkg_transport') ?></label>

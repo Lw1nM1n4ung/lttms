@@ -41,11 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hotel_id     = !empty($_POST['hotel_id']) ? (int)$_POST['hotel_id'] : null;
         $transport_id = !empty($_POST['transportation_id']) ? (int)$_POST['transportation_id'] : null;
         $status       = $_POST['status'] ?? 'active';
+        $start_date  = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+        $end_date    = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
         if (empty($title)) $errors[] = 'Title is required.';
         if ($duration < 1) $errors[] = 'Duration must be at least 1 day.';
         if ($price < 1000) $errors[] = 'Price must be at least 1,000 MMK.';
         if ($remaining > $max_slots) $errors[] = 'Remaining slots cannot exceed maximum.';
+        if ($start_date && $end_date && $end_date < $start_date) $errors[] = t('err_pkg_end_before_start');
 
         $imageFile = null;
         if (!empty($_FILES['package_image']) && $_FILES['package_image']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -58,16 +61,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($errors)) {
             if ($imageFile) {
                 $stmt = $pdo->prepare(
-                    "UPDATE packages SET title=?, destination=?, description=?, duration_days=?, price_per_person=?,
+                    "UPDATE packages SET title=?, destination=?, description=?, duration_days=?, start_date=?, end_date=?, price_per_person=?,
                      max_slots=?, remaining_slots=?, hotel_id=?, transportation_id=?, status=?, image_url=? WHERE id=? AND agent_id=?"
                 );
-                $stmt->execute([$title, $destination, $description, $duration, $price, $max_slots, $remaining, $hotel_id, $transport_id, $status, $imageFile, $id, $agentId]);
+                $stmt->execute([$title, $destination, $description, $duration, $start_date, $end_date, $price, $max_slots, $remaining, $hotel_id, $transport_id, $status, $imageFile, $id, $agentId]);
             } else {
                 $stmt = $pdo->prepare(
-                    "UPDATE packages SET title=?, destination=?, description=?, duration_days=?, price_per_person=?,
+                    "UPDATE packages SET title=?, destination=?, description=?, duration_days=?, start_date=?, end_date=?, price_per_person=?,
                      max_slots=?, remaining_slots=?, hotel_id=?, transportation_id=?, status=? WHERE id=? AND agent_id=?"
                 );
-                $stmt->execute([$title, $destination, $description, $duration, $price, $max_slots, $remaining, $hotel_id, $transport_id, $status, $id, $agentId]);
+                $stmt->execute([$title, $destination, $description, $duration, $start_date, $end_date, $price, $max_slots, $remaining, $hotel_id, $transport_id, $status, $id, $agentId]);
             }
             setFlash('Package updated successfully!');
             redirect(BASE_URL . '/agent/packages.php');
@@ -149,6 +152,20 @@ require_once __DIR__ . '/../includes/header.php';
                     </select>
                 </div>
             </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="start_date"><?= t('start_date') ?></label>
+                    <input type="date" name="start_date" id="start_date" class="form-control"
+                           value="<?= sanitize($_POST['start_date'] ?? $p['start_date'] ?? '') ?>">
+                </div>
+                <div class="form-group">
+                    <label for="end_date"><?= t('end_date') ?></label>
+                    <input type="date" name="end_date" id="end_date" class="form-control"
+                           value="<?= sanitize($_POST['end_date'] ?? $p['end_date'] ?? '') ?>">
+                </div>
+            </div>
+            <small><?= t('pkg_date_hint') ?></small>
 
             <div class="form-row">
                 <div class="form-group">

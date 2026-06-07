@@ -50,10 +50,6 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="stat-number"><?= $stats['total_agents'] ?></div>
             <div class="stat-label"><?= t('agents') ?></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-number">&#11088; <?= $stats['avg_rating'] ?></div>
-            <div class="stat-label"><?= t('avg_rating') ?></div>
-        </div>
         <?php if ($pendingUsers > 0): ?>
         <div class="stat-card stat-highlight">
             <div class="stat-number"><?= $pendingUsers ?></div>
@@ -65,7 +61,6 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="dashboard-actions">
         <a href="<?= BASE_URL ?>/admin/users.php" class="btn btn-primary"><?= t('manage_users') ?></a>
         <a href="<?= BASE_URL ?>/admin/packages.php" class="btn btn-outline"><?= t('nav_view_packages') ?></a>
-        <a href="<?= BASE_URL ?>/admin/destinations.php" class="btn btn-outline"><?= t('manage_destinations') ?></a>
     </div>
 
     <div class="grid-2col mt-2">

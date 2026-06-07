@@ -58,6 +58,8 @@ CREATE TABLE packages (
     destination VARCHAR(200) NOT NULL,
     description TEXT,
     duration_days INT NOT NULL,
+    start_date DATE DEFAULT NULL,
+    end_date DATE DEFAULT NULL,
     price_per_person DECIMAL(10,2) NOT NULL,
     max_slots INT NOT NULL DEFAULT 20,
     remaining_slots INT NOT NULL DEFAULT 20,

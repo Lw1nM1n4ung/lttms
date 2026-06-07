@@ -9,6 +9,10 @@ function formatPrice(float $amount): string {
     return number_format($amount, 0, '.', ',') . ' MMK';
 }
 
+function formatDuration(int $days): string {
+    return $days . ' ' . t('nights') . ' ' . ($days + 1) . ' ' . t('days');
+}
+
 function getMyanmarLocations(): array {
     return [
         'Yangon Region',
@@ -37,6 +41,13 @@ function getActiveDestinations(): array {
 
 function formatDate(string $date): string {
     return date('M d, Y', strtotime($date));
+}
+
+function formatDateRange(?string $start, ?string $end): string {
+    if (!$start && !$end) return '';
+    if ($start && $end) return date('M d', strtotime($start)) . ' - ' . date('M d, Y', strtotime($end));
+    if ($start) return t('from') . ' ' . date('M d, Y', strtotime($start));
+    return t('to') . ' ' . date('M d, Y', strtotime($end));
 }
 
 function getFlashMessage(): ?string {
@@ -79,10 +90,6 @@ function getPackages(array $filters = []): array {
         $sql .= " AND p.price_per_person <= ?";
         $params[] = $filters['max_price'];
     }
-    if (!empty($filters['min_rating'])) {
-        $sql .= " AND p.rating_avg >= ?";
-        $params[] = $filters['min_rating'];
-    }
 
     $sql .= " ORDER BY p.created_at DESC";
 
@@ -107,54 +114,6 @@ function getPackageById(int $id): ?array {
     return $stmt->fetch() ?: null;
 }
 
-function getPackageFeedback(int $packageId): array {
-    $pdo = getDBConnection();
-    $stmt = $pdo->prepare(
-        "SELECT f.*, u.full_name as customer_name
-         FROM feedback f
-         JOIN users u ON f.customer_id = u.id
-         WHERE f.package_id = ?
-         ORDER BY f.created_at DESC"
-    );
-    $stmt->execute([$packageId]);
-    return $stmt->fetchAll();
-}
-
-function getRatingDistribution(int $packageId): array {
-    $pdo = getDBConnection();
-    $stmt = $pdo->prepare("SELECT rating, COUNT(*) as count FROM feedback WHERE package_id = ? GROUP BY rating ORDER BY rating DESC");
-    $stmt->execute([$packageId]);
-    $rows = $stmt->fetchAll();
-
-    $dist = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
-    $total = 0;
-    foreach ($rows as $r) {
-        $dist[(int)$r['rating']] = (int)$r['count'];
-        $total += (int)$r['count'];
-    }
-    return ['distribution' => $dist, 'total' => $total];
-}
-
-function renderStars(float $rating): string {
-    $full = (int)floor($rating);
-    $half = ($rating - $full) >= 0.25 && ($rating - $full) < 0.75 ? 1 : 0;
-    $extra = ($rating - $full) >= 0.75 ? 1 : 0;
-    $full += $extra;
-    $empty = 5 - $full - $half;
-
-    $html = '<span class="stars-display">';
-    for ($i = 0; $i < $full; $i++) $html .= '<span class="star star-full">&#9733;</span>';
-    if ($half) $html .= '<span class="star star-half">&#9733;</span>';
-    for ($i = 0; $i < $empty; $i++) $html .= '<span class="star star-empty">&#9733;</span>';
-    $html .= '</span>';
-    return $html;
-}
-
-function updatePackageRating(int $packageId): void {
-    $pdo = getDBConnection();
-    $stmt = $pdo->prepare("UPDATE packages SET rating_avg = (SELECT AVG(rating) FROM feedback WHERE package_id = ?) WHERE id = ?");
-    $stmt->execute([$packageId, $packageId]);
-}
 
 function handleNRCUpload(array $file): ?string {
     $allowed = ['image/jpeg', 'image/png', 'image/webp'];
@@ -258,9 +217,6 @@ function getDashboardStats(): array {
 
     $stmt = $pdo->query("SELECT destination, COUNT(*) as count FROM packages p JOIN bookings b ON p.id = b.package_id GROUP BY destination ORDER BY count DESC LIMIT 5");
     $stats['popular_destinations'] = $stmt->fetchAll();
-
-    $stmt = $pdo->query("SELECT COALESCE(AVG(rating), 0) as avg FROM feedback");
-    $stats['avg_rating'] = round($stmt->fetch()['avg'], 1);
 
     $stmt = $pdo->query("SELECT COUNT(*) as total FROM users WHERE role = 'customer'");
     $stats['total_customers'] = $stmt->fetch()['total'];

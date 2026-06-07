@@ -27,25 +27,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($password !== $confirm) $errors[] = t('err_password_mismatch');
         if (!in_array($role, ['customer', 'agent'])) $errors[] = t('err_invalid_role');
         if ($role === 'agent' && !in_array($agent_location, getMyanmarLocations())) $errors[] = t('err_agent_location');
-        if (empty($nrc_number)) $errors[] = t('err_nrc_required');
 
         $nrc_front = null;
         $nrc_back = null;
 
-        if (empty($_FILES['nrc_front']['name'])) {
-            $errors[] = t('err_nrc_front_required');
-        }
-        if (empty($_FILES['nrc_back']['name'])) {
-            $errors[] = t('err_nrc_back_required');
-        }
+        if ($role === 'agent') {
+            if (empty($nrc_number)) $errors[] = t('err_nrc_required');
 
-        if (empty($errors) && !empty($_FILES['nrc_front']['name'])) {
-            $nrc_front = handleNRCUpload($_FILES['nrc_front']);
-            if (!$nrc_front) $errors[] = t('err_nrc_front_invalid');
-        }
-        if (empty($errors) && !empty($_FILES['nrc_back']['name'])) {
-            $nrc_back = handleNRCUpload($_FILES['nrc_back']);
-            if (!$nrc_back) $errors[] = t('err_nrc_back_invalid');
+            if (empty($_FILES['nrc_front']['name'])) {
+                $errors[] = t('err_nrc_front_required');
+            }
+            if (empty($_FILES['nrc_back']['name'])) {
+                $errors[] = t('err_nrc_back_required');
+            }
+
+            if (empty($errors) && !empty($_FILES['nrc_front']['name'])) {
+                $nrc_front = handleNRCUpload($_FILES['nrc_front']);
+                if (!$nrc_front) $errors[] = t('err_nrc_front_invalid');
+            }
+            if (empty($errors) && !empty($_FILES['nrc_back']['name'])) {
+                $nrc_back = handleNRCUpload($_FILES['nrc_back']);
+                if (!$nrc_back) $errors[] = t('err_nrc_back_invalid');
+            }
         }
 
         if (empty($errors)) {
@@ -57,11 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                 $loc = ($role === 'agent') ? $agent_location : null;
+                $status = ($role === 'agent') ? 'pending' : 'approved';
                 $stmt = $pdo->prepare(
                     "INSERT INTO users (username, email, password, full_name, phone, nrc_number, nrc_front_photo, nrc_back_photo, role, agent_location, status)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 );
-                $stmt->execute([$username, $email, $hashedPassword, $full_name, $phone, $nrc_number, $nrc_front, $nrc_back, $role, $loc]);
+                $stmt->execute([$username, $email, $hashedPassword, $full_name, $phone, $nrc_number, $nrc_front, $nrc_back, $role, $loc, $status]);
                 setFlash(t('register_pending_msg'));
                 redirect(BASE_URL . '/login.php');
             }
@@ -128,7 +132,7 @@ require_once __DIR__ . '/includes/header.php';
                 <input type="tel" name="phone" id="phone" class="form-control" value="<?= sanitize($_POST['phone'] ?? '') ?>" placeholder="09xxxxxxxxx">
             </div>
 
-            <fieldset class="nrc-fieldset">
+            <fieldset class="nrc-fieldset" id="nrcFieldset" style="display:none">
                 <legend><?= t('nrc_section_title') ?></legend>
 
                 <div class="form-group">
@@ -174,10 +178,18 @@ require_once __DIR__ . '/includes/header.php';
     var role = document.getElementById('role');
     var locGroup = document.getElementById('locationGroup');
     var locSelect = document.getElementById('agent_location');
+    var nrcFieldset = document.getElementById('nrcFieldset');
+    var nrcNumber = document.getElementById('nrc_number');
+    var nrcFront = document.getElementById('nrc_front');
+    var nrcBack = document.getElementById('nrc_back');
     function toggle() {
         var isAgent = role.value === 'agent';
         locGroup.style.display = isAgent ? '' : 'none';
         locSelect.required = isAgent;
+        nrcFieldset.style.display = isAgent ? '' : 'none';
+        nrcNumber.required = isAgent;
+        nrcFront.required = isAgent;
+        nrcBack.required = isAgent;
     }
     role.addEventListener('change', toggle);
     toggle();

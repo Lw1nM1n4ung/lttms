@@ -43,7 +43,7 @@ $flash = getFlashMessage();
                 <li><a href="<?= BASE_URL ?>/login.php" class="btn btn-sm btn-outline"><?= t('nav_login') ?></a></li>
                 <li><a href="<?= BASE_URL ?>/register.php" class="btn btn-sm btn-primary"><?= t('nav_register') ?></a></li>
             <?php endif; ?>
-            <li><button class="theme-toggle" id="themeToggle" title="<?= t('toggle_theme') ?>"><span id="themeIcon">&#9789;</span></button></li>
+
         </ul>
     </div>
 </nav>

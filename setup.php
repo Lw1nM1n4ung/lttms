@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $messages[] = ['success', 'Database created and seeded successfully!'];
-        $messages[] = ['success', 'Tables: users, hotels, transportation, packages, bookings, feedback'];
+        $messages[] = ['success', 'Tables: users, packages, bookings, destinations'];
         $messages[] = ['success', 'Demo data loaded with real Myanmar destinations and prices.'];
         $success = true;
     } catch (PDOException $e) {

@@ -30,15 +30,6 @@ $packages = getPackages($filters);
             <label>Max (MMK)</label>
             <input type="number" name="max_price" class="form-control" value="<?= sanitize($filters['max_price']) ?>" step="10000">
         </div>
-        <div class="filter-group">
-            <label><?= t('filter_min_rating') ?></label>
-            <select name="min_rating" class="form-control">
-                <option value=""><?= t('filter_all_ratings') ?></option>
-                <option value="3" <?= $filters['min_rating'] === '3' ? 'selected' : '' ?>>3+ <?= t('stars_up') ?></option>
-                <option value="4" <?= $filters['min_rating'] === '4' ? 'selected' : '' ?>>4+ <?= t('stars_up') ?></option>
-                <option value="4.5" <?= $filters['min_rating'] === '4.5' ? 'selected' : '' ?>>4.5+ <?= t('stars_up') ?></option>
-            </select>
-        </div>
         <div class="filter-group filter-actions">
             <button type="submit" class="btn btn-primary"><?= t('filter_button') ?></button>
             <a href="<?= BASE_URL ?>/customer/packages.php" class="btn btn-outline">Clear</a>
@@ -59,14 +50,16 @@ $packages = getPackages($filters);
                     <?php if (!empty($pkg['image_url'])): ?>
                         <img src="<?= BASE_URL ?>/uploads/packages/<?= sanitize($pkg['image_url']) ?>" alt="<?= sanitize($pkg['title']) ?>" onerror="this.style.display='none'">
                     <?php endif; ?>
-                    <span class="package-duration"><?= $pkg['duration_days'] ?> <?= t('days') ?></span>
+                    <span class="package-duration"><?= formatDuration($pkg['duration_days']) ?></span>
+                    <?php if ($range = formatDateRange($pkg['start_date'] ?? null, $pkg['end_date'] ?? null)): ?>
+                        <span class="badge">&#128197; <?= $range ?></span>
+                    <?php endif; ?>
                 </div>
                 <div class="package-body">
                     <h3><?= sanitize($pkg['title']) ?></h3>
                     <p class="package-destination">&#128205; <?= sanitize($pkg['destination']) ?></p>
                     <p class="package-desc"><?= sanitize(substr($pkg['description'], 0, 120)) ?>...</p>
                     <div class="package-meta">
-                        <span class="package-rating"><?= renderStars((float)$pkg['rating_avg']) ?> <?= number_format($pkg['rating_avg'], 1) ?></span>
                         <span class="package-slots"><?= $pkg['remaining_slots'] ?> <?= t('remaining_slots') ?></span>
                     </div>
                     <?php if ($pkg['hotel_name']): ?>

@@ -20,13 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Invalid form submission.';
     } else {
-        $travel_date = $_POST['travel_date'] ?? '';
         $num_people  = (int)($_POST['num_people'] ?? 1);
         $payment_ref = trim($_POST['payment_reference'] ?? '');
 
-        if (empty($travel_date) || strtotime($travel_date) < strtotime('tomorrow')) {
-            $errors[] = 'Travel date must be a future date.';
-        }
         if ($num_people < 1 || $num_people > $package['remaining_slots']) {
             $errors[] = 'Invalid number of people. Maximum available: ' . $package['remaining_slots'];
         }
@@ -40,10 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $pdo->beginTransaction();
             $stmt = $pdo->prepare(
-                "INSERT INTO bookings (customer_id, package_id, num_people, total_price, booking_date, travel_date, payment_method, payment_reference)
-                 VALUES (?, ?, ?, ?, CURDATE(), ?, 'KBZ Pay', ?)"
+                "INSERT INTO bookings (customer_id, package_id, num_people, total_price, booking_date, payment_method, payment_reference)
+                 VALUES (?, ?, ?, ?, CURDATE(), 'KBZ Pay', ?)"
             );
-            $stmt->execute([$currentUser['id'], $package_id, $num_people, $total_price, $travel_date, $payment_ref]);
+            $stmt->execute([$currentUser['id'], $package_id, $num_people, $total_price, $payment_ref]);
 
             $stmt = $pdo->prepare("UPDATE packages SET remaining_slots = remaining_slots - ? WHERE id = ? AND remaining_slots >= ?");
             $stmt->execute([$num_people, $package_id, $num_people]);
@@ -78,7 +74,10 @@ require_once __DIR__ . '/../includes/header.php';
 
         <div class="booking-summary">
             <h3><?= sanitize($package['title']) ?></h3>
-            <p>&#128205; <?= sanitize($package['destination']) ?> &mdash; <?= $package['duration_days'] ?> <?= t('days') ?></p>
+            <p>&#128205; <?= sanitize($package['destination']) ?> &mdash; <?= formatDuration($package['duration_days']) ?></p>
+            <?php if ($range = formatDateRange($package['start_date'] ?? null, $package['end_date'] ?? null)): ?>
+                <p>&#128197; <?= $range ?></p>
+            <?php endif; ?>
             <?php if ($package['hotel_name']): ?>
                 <p>&#127976; <?= sanitize($package['hotel_name']) ?></p>
             <?php endif; ?>
@@ -91,19 +90,11 @@ require_once __DIR__ . '/../includes/header.php';
             <?= csrfField() ?>
             <input type="hidden" name="package_id" value="<?= $package['id'] ?>">
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="num_people"><?= t('num_people') ?></label>
-                    <input type="number" name="num_people" id="num_people" class="form-control"
-                           min="1" max="<?= $package['remaining_slots'] ?>" value="<?= $num_people ?>"
-                           data-price="<?= $package['price_per_person'] ?>" required>
-                </div>
-                <div class="form-group">
-                    <label for="travel_date"><?= t('travel_date') ?></label>
-                    <input type="date" name="travel_date" id="travel_date" class="form-control"
-                           min="<?= date('Y-m-d', strtotime('+1 day')) ?>"
-                           value="<?= sanitize($_POST['travel_date'] ?? '') ?>" required>
-                </div>
+            <div class="form-group">
+                <label for="num_people"><?= t('num_people') ?></label>
+                <input type="number" name="num_people" id="num_people" class="form-control"
+                       min="1" max="<?= $package['remaining_slots'] ?>" value="<?= $num_people ?>"
+                       data-price="<?= $package['price_per_person'] ?>" required>
             </div>
 
             <div class="price-breakdown">

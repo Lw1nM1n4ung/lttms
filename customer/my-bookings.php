@@ -16,15 +16,6 @@ $stmt = $pdo->prepare(
 $stmt->execute([$currentUser['id']]);
 $bookings = $stmt->fetchAll();
 
-$hasFeedback = [];
-if ($bookings) {
-    $bookingIds = array_column($bookings, 'id');
-    $placeholders = implode(',', array_fill(0, count($bookingIds), '?'));
-    $stmt = $pdo->prepare("SELECT booking_id FROM feedback WHERE booking_id IN ($placeholders)");
-    $stmt->execute($bookingIds);
-    $hasFeedback = array_column($stmt->fetchAll(), 'booking_id');
-}
-
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -48,7 +39,6 @@ require_once __DIR__ . '/../includes/header.php';
                     <th><?= t('col_people') ?></th>
                     <th><?= t('col_total') ?></th>
                     <th><?= t('col_status') ?></th>
-                    <th><?= t('col_actions') ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -63,15 +53,6 @@ require_once __DIR__ . '/../includes/header.php';
                         <span class="status-badge status-<?= $b['status'] ?>">
                             <?= tStatus($b['status']) ?>
                         </span>
-                    </td>
-                    <td>
-                        <?php if ($b['status'] === 'confirmed' && !in_array($b['id'], $hasFeedback)): ?>
-                            <a href="<?= BASE_URL ?>/customer/feedback.php?booking_id=<?= $b['id'] ?>" class="btn btn-sm btn-outline"><?= t('leave_review') ?></a>
-                        <?php elseif (in_array($b['id'], $hasFeedback)): ?>
-                            <span class="text-muted">&#10003;</span>
-                        <?php else: ?>
-                            <span class="text-muted">—</span>
-                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

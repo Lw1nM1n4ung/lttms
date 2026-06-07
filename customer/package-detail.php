@@ -9,8 +9,6 @@ if (!$package) {
     redirect(BASE_URL . '/customer/packages.php');
 }
 
-$feedbacks = getPackageFeedback($id);
-$ratingData = getRatingDistribution($id);
 $pageTitle = $package['title'];
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -31,8 +29,10 @@ require_once __DIR__ . '/../includes/header.php';
             <p class="package-destination-lg">&#128205; <?= sanitize($package['destination']) ?></p>
 
             <div class="detail-badges">
-                <span class="badge">&#128197; <?= $package['duration_days'] ?> <?= t('days') ?></span>
-                <span class="badge"><?= renderStars((float)$package['rating_avg']) ?> <?= number_format($package['rating_avg'], 1) ?></span>
+                <span class="badge">&#128197; <?= formatDuration($package['duration_days']) ?></span>
+                <?php if ($range = formatDateRange($package['start_date'] ?? null, $package['end_date'] ?? null)): ?>
+                    <span class="badge">&#128197; <?= $range ?></span>
+                <?php endif; ?>
                 <span class="badge"><?= $package['remaining_slots'] ?> <?= t('slots_available') ?></span>
                 <span class="badge"><?= sanitize($package['agent_name']) ?></span>
             </div>
@@ -58,53 +58,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <p><?= formatPrice($package['transport_price']) ?></p>
             </div>
             <?php endif; ?>
-
-            <div class="detail-section">
-                <h2><?= t('reviews') ?> (<?= count($feedbacks) ?>)</h2>
-
-                <?php if ($ratingData['total'] > 0): ?>
-                <div class="rating-summary">
-                    <div class="rating-overview">
-                        <div class="rating-big"><?= number_format($package['rating_avg'], 1) ?></div>
-                        <?= renderStars((float)$package['rating_avg']) ?>
-                        <div class="rating-count"><?= $ratingData['total'] ?> <?= t('total_reviews') ?></div>
-                    </div>
-                    <div class="rating-bars">
-                        <?php for ($s = 5; $s >= 1; $s--):
-                            $count = $ratingData['distribution'][$s];
-                            $pct = $ratingData['total'] > 0 ? round($count / $ratingData['total'] * 100) : 0;
-                        ?>
-                        <div class="rating-bar-row">
-                            <span class="rating-bar-label"><?= $s ?> &#9733;</span>
-                            <div class="rating-bar-track">
-                                <div class="rating-bar-fill" style="width: <?= $pct ?>%"></div>
-                            </div>
-                            <span class="rating-bar-count"><?= $count ?></span>
-                        </div>
-                        <?php endfor; ?>
-                    </div>
-                </div>
-                <?php else: ?>
-                    <p class="text-muted"><?= t('be_first_review') ?></p>
-                <?php endif; ?>
-
-                <?php foreach ($feedbacks as $fb): ?>
-                <div class="review-card">
-                    <div class="review-header">
-                        <strong><?= sanitize($fb['customer_name']) ?></strong>
-                        <span class="review-rating"><?= renderStars((float)$fb['rating']) ?></span>
-                        <span class="review-date"><?= formatDate($fb['created_at']) ?></span>
-                    </div>
-                    <p><?= nl2br(sanitize($fb['comment'])) ?></p>
-                    <?php if ($fb['agent_reply']): ?>
-                    <div class="agent-reply">
-                        <strong><?= t('agent_reply') ?>:</strong>
-                        <p><?= nl2br(sanitize($fb['agent_reply'])) ?></p>
-                    </div>
-                    <?php endif; ?>
-                </div>
-                <?php endforeach; ?>
-            </div>
         </div>
 
         <div class="detail-sidebar">

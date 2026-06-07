@@ -35,29 +35,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Theme toggle
-    var themeToggle = document.getElementById('themeToggle');
-    var themeIcon = document.getElementById('themeIcon');
-    function updateIcon() {
-        if (themeIcon) {
-            themeIcon.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '☽';
-        }
-    }
-    updateIcon();
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function () {
-            var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.removeItem('lttms-theme');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('lttms-theme', 'dark');
-            }
-            updateIcon();
-        });
-    }
-
     // Auto-dismiss flash alerts after 5 seconds
     var alerts = document.querySelectorAll('.alert:not(.alert-error)');
     alerts.forEach(function (alert) {

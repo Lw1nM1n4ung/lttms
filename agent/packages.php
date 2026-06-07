@@ -50,8 +50,8 @@ require_once __DIR__ . '/../includes/header.php';
                     <th><?= t('col_destination') ?></th>
                     <th><?= t('col_price') ?></th>
                     <th><?= t('duration') ?></th>
+                    <th><?= t('col_dates') ?></th>
                     <th><?= t('col_slots') ?></th>
-                    <th><?= t('col_rating_avg') ?></th>
                     <th><?= t('col_status') ?></th>
                     <th><?= t('col_actions') ?></th>
                 </tr>
@@ -62,9 +62,9 @@ require_once __DIR__ . '/../includes/header.php';
                     <td><?= sanitize($pkg['title']) ?></td>
                     <td><?= sanitize($pkg['destination']) ?></td>
                     <td><?= formatPrice($pkg['price_per_person']) ?></td>
-                    <td><?= $pkg['duration_days'] ?> <?= t('days') ?></td>
+                    <td><?= formatDuration($pkg['duration_days']) ?></td>
+                    <td><?= sanitize(formatDateRange($pkg['start_date'] ?? null, $pkg['end_date'] ?? null)) ?></td>
                     <td><?= $pkg['remaining_slots'] ?> / <?= $pkg['max_slots'] ?></td>
-                    <td>&#11088; <?= number_format($pkg['rating_avg'], 1) ?></td>
                     <td><span class="status-badge status-<?= $pkg['status'] ?>"><?= tStatus($pkg['status']) ?></span></td>
                     <td class="actions-cell">
                         <a href="<?= BASE_URL ?>/agent/edit-package.php?id=<?= $pkg['id'] ?>" class="btn btn-sm btn-outline"><?= t('btn_edit') ?></a>

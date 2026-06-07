@@ -20,14 +20,6 @@ $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM bookings b JOIN packages p 
 $stmt->execute([$agentId]);
 $pendingBookings = $stmt->fetch()['total'];
 
-$stmt = $pdo->prepare("SELECT COALESCE(SUM(b.total_price), 0) as total FROM bookings b JOIN packages p ON b.package_id = p.id WHERE p.agent_id = ? AND b.status = 'confirmed'");
-$stmt->execute([$agentId]);
-$revenue = $stmt->fetch()['total'];
-
-$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM feedback f JOIN packages p ON f.package_id = p.id WHERE p.agent_id = ? AND f.agent_reply IS NULL");
-$stmt->execute([$agentId]);
-$unrepliedFeedback = $stmt->fetch()['total'];
-
 $stmt = $pdo->prepare(
     "SELECT b.*, p.title, p.destination, u.full_name as customer_name
      FROM bookings b
@@ -60,23 +52,12 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="stat-number"><?= $pendingBookings ?></div>
             <div class="stat-label"><?= t('pending_bookings') ?></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-number"><?= formatPrice($revenue) ?></div>
-            <div class="stat-label"><?= t('revenue') ?></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number"><?= $unrepliedFeedback ?></div>
-            <div class="stat-label"><?= t('unreplied_feedback') ?></div>
-        </div>
     </div>
 
     <div class="dashboard-actions">
         <a href="<?= BASE_URL ?>/agent/packages.php" class="btn btn-primary"><?= t('nav_my_packages') ?></a>
         <a href="<?= BASE_URL ?>/agent/add-package.php" class="btn btn-outline"><?= t('add_new_package') ?></a>
         <a href="<?= BASE_URL ?>/agent/bookings.php" class="btn btn-outline"><?= t('manage_bookings') ?></a>
-        <a href="<?= BASE_URL ?>/agent/hotels.php" class="btn btn-outline"><?= t('nav_hotels') ?></a>
-        <a href="<?= BASE_URL ?>/agent/transportation.php" class="btn btn-outline"><?= t('nav_transport') ?></a>
-        <a href="<?= BASE_URL ?>/agent/feedback.php" class="btn btn-outline"><?= t('view_feedback') ?></a>
         <a href="<?= BASE_URL ?>/agent/settings.php" class="btn btn-outline"><?= t('agent_settings') ?></a>
     </div>
 
