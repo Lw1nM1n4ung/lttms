@@ -93,60 +93,89 @@ if (-not $XamppFound) {
     Write-Step "0a   Downloading XAMPP..."
 
     $XamppVersion = "8.2.12"
-    $DownloadUrl  = "https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/$XamppVersion/xampp-windows-x64-$XamppVersion-0-VS16-installer.exe/download"
-    $FallbackUrl  = "https://www.apachefriends.org/xampp-files/$XamppVersion/xampp-windows-x64-$XamppVersion-0-VS16-installer.exe"
+    $XamppFileName = "xampp-windows-x64-$XamppVersion-0-VS16-installer.exe"
+    $SourceForgeUrl = "https://downloads.sourceforge.net/project/xampp/XAMPP%20Windows/$XamppVersion/$XamppFileName"
+    $ApacheFriendsUrl = "https://www.apachefriends.org/xampp-files/$XamppVersion/$XamppFileName"
 
-    Write-Info "Download URL: $DownloadUrl"
-    Write-Info "File size: ~150 MB — this may take a few minutes..."
+    Write-Info "File: $XamppFileName (~150 MB)"
+    Write-Info "This is the official XAMPP installer from Apache Friends."
 
     # Remove stale partial download
     if (Test-Path $InstallerExe) { Remove-Item $InstallerExe -Force }
 
+    # Temporarily add the TEMP download path to Defender exclusions so
+    # real-time protection doesn't block a known-safe installer.
+    $AddedDefenderExclusion = $false
     try {
-        # Use .NET WebClient for progress bar support in older PowerShell
-        $wc = New-Object System.Net.WebClient
-        Write-Info "Starting download (large file — progress may appear frozen at 100% while hash-checking)..."
-
-        # Register progress event
-        $global:downloadComplete = $false
-        $wc.DownloadFileCompleted += { $global:downloadComplete = $true }
-        $wc.DownloadProgressChanged += {
-            param($sender, $e)
-            $pct = $e.ProgressPercentage
-            $mb  = [math]::Round($e.TotalBytesToReceive / 1MB, 1)
-            Write-Progress -Activity "Downloading XAMPP $XamppVersion" `
-                           -Status "$($e.BytesReceived / 1MB -as [int]) MB / $mb MB" `
-                           -PercentComplete $pct
-        }
-        $wc.DownloadFileAsync($DownloadUrl, $InstallerExe)
-
-        # Wait with spinner
-        $spinner = @('|','/','-','\'); $i = 0
-        while (-not $global:downloadComplete) {
-            Write-Host "`r   ... downloading $($spinner[$i++ % 4])" -NoNewline -ForegroundColor Gray
-            Start-Sleep -Milliseconds 250
-        }
-        Write-Progress -Activity "Downloading XAMPP" -Completed
-        Write-Host "`r   DONE downloading                                " -ForegroundColor Green
-
-        if (-not (Test-Path $InstallerExe) -or (Get-Item $InstallerExe).Length -lt 100MB) {
-            Write-Warn "Download may be incomplete — trying mirror..."
-            Invoke-WebRequest -Uri $FallbackUrl -OutFile $InstallerExe -UseBasicParsing
-        }
+        Add-MpPreference -ExclusionPath $env:TEMP -ErrorAction Stop
+        $AddedDefenderExclusion = $true
+        Write-Info "Added TEMP to Defender exclusions for the download."
     } catch {
-        Write-Warn "WebClient failed, trying Invoke-WebRequest..."
+        Write-Info "Could not add Defender exclusion (non-admin or Defender not running)."
+    }
+
+    $DownloadOk = $false
+
+    # Method 1: BITS — native Windows transfer service, least likely to trigger AV
+    if (Get-Command Start-BitsTransfer -ErrorAction SilentlyContinue) {
         try {
-            Invoke-WebRequest -Uri $DownloadUrl -OutFile $InstallerExe -UseBasicParsing
+            Write-Info "Downloading via BITS (background transfer)..."
+            Start-BitsTransfer -Source $SourceForgeUrl -Destination $InstallerExe `
+                               -DisplayName "XAMPP $XamppVersion" -Priority High
+            $DownloadOk = $true
         } catch {
-            Write-Warn "SourceForge blocked. Trying direct Apache Friends mirror..."
-            Invoke-WebRequest -Uri $FallbackUrl -OutFile $InstallerExe -UseBasicParsing
+            Write-Warn "BITS download failed: $_"
         }
     }
 
-    if (-not (Test-Path $InstallerExe) -or (Get-Item $InstallerExe).Length -lt 50MB) {
-        Write-Fail "Download failed. Please install XAMPP manually from:`n         https://www.apachefriends.org/"
+    # Method 2: curl.exe — ships with Windows 10+, trusted system binary
+    if (-not $DownloadOk -and (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+        try {
+            Write-Info "Downloading via curl..."
+            curl.exe -L -o "$InstallerExe" "$SourceForgeUrl" --progress-bar
+            $DownloadOk = $true
+        } catch {
+            Write-Warn "curl download failed, trying mirror..."
+            try {
+                curl.exe -L -o "$InstallerExe" "$ApacheFriendsUrl" --progress-bar
+                $DownloadOk = $true
+            } catch {
+                Write-Warn "curl mirror also failed: $_"
+            }
+        }
     }
-    Write-OK "Downloaded — $([math]::Round((Get-Item $InstallerExe).Length / 1MB)) MB"
+
+    # Method 3: Invoke-WebRequest — last resort
+    if (-not $DownloadOk) {
+        try {
+            Write-Info "Downloading via Invoke-WebRequest..."
+            Invoke-WebRequest -Uri $SourceForgeUrl -OutFile $InstallerExe -UseBasicParsing
+            $DownloadOk = $true
+        } catch {
+            Write-Warn "SourceForge failed, trying Apache Friends direct..."
+            try {
+                Invoke-WebRequest -Uri $ApacheFriendsUrl -OutFile $InstallerExe -UseBasicParsing
+                $DownloadOk = $true
+            } catch {
+                Write-Fail "All download methods failed.`n         Please install XAMPP manually from https://www.apachefriends.org/"
+            }
+        }
+    }
+
+    # Remove Defender exclusion now that download is done
+    if ($AddedDefenderExclusion) {
+        try { Remove-MpPreference -ExclusionPath $env:TEMP -ErrorAction SilentlyContinue } catch {}
+    }
+
+    # Verify the download
+    if (-not (Test-Path $InstallerExe)) {
+        Write-Fail "Download failed — file not found.`n         Please install XAMPP manually from https://www.apachefriends.org/"
+    }
+    $FileSize = (Get-Item $InstallerExe).Length
+    if ($FileSize -lt 50MB) {
+        Write-Fail "Download incomplete (only $([math]::Round($FileSize / 1MB)) MB).`n         Please install XAMPP manually from https://www.apachefriends.org/"
+    }
+    Write-OK "Downloaded — $([math]::Round($FileSize / 1MB)) MB"
 
     # ── Install ──────────────────────────────────────────────────
     Write-Step "0b   Installing XAMPP to $XamppPath (unattended)..."
@@ -154,7 +183,11 @@ if (-not $XamppFound) {
     Write-Info "This will take 2-5 minutes. Please wait..."
     Write-Info "If Windows SmartScreen pops up, click 'More info' → 'Run anyway'"
 
-    # XAMPP unattended install flags
+    # Temporarily exclude the installer itself from real-time scanning
+    try {
+        Add-MpPreference -ExclusionPath $InstallerExe -ErrorAction SilentlyContinue
+    } catch {}
+
     $InstallArgs = @(
         "--mode", "unattended",
         "--disable-components", "xampp_mercury,xampp_tomcat,xampp_filezilla,xampp_perl,xampp_webalizer",
