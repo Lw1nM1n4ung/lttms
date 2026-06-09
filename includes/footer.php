@@ -10,7 +10,8 @@
             <div class="footer-col">
                 <h3><?= t('footer_destinations') ?></h3>
                 <ul>
-                    <?php foreach (getActiveDestinations() as $fd): ?>
+                    <?php try { $footerDests = getActiveDestinations(); } catch (PDOException $e) { $footerDests = []; } ?>
+                    <?php foreach ($footerDests as $fd): ?>
                         <li><?= sanitize($fd['name']) ?></li>
                     <?php endforeach; ?>
                 </ul>

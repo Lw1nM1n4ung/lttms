@@ -2,7 +2,7 @@
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', 1);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 
 session_start();
@@ -68,4 +68,8 @@ function csrfField(): string {
     return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(generateCSRFToken()) . '">';
 }
 
-$currentUser = getCurrentUser();
+try {
+    $currentUser = getCurrentUser();
+} catch (PDOException $e) {
+    $currentUser = null;
+}

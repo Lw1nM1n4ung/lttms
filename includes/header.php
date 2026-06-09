@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/functions.php';
-$currentUser = getCurrentUser();
 $flash = getFlashMessage();
 ?>
 <!DOCTYPE html>
