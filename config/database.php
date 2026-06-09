@@ -4,14 +4,12 @@ define('DB_NAME', getenv('DB_NAME') ?: 'lttms_db');
 define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
 define('DB_CHARSET', 'utf8mb4');
-if (getenv('BASE_URL') !== false) {
-    define('BASE_URL', getenv('BASE_URL'));
-} else {
-    $docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
-    $projectRoot = str_replace('\\', '/', dirname(__DIR__));
-    $basePath = str_replace($docRoot, '', $projectRoot);
-    define('BASE_URL', rtrim($basePath, '/'));
-}
+$docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+$projectRoot = str_replace('\\', '/', dirname(__DIR__));
+$basePath = (stripos($projectRoot, $docRoot) === 0)
+    ? substr($projectRoot, strlen($docRoot))
+    : '';
+define('BASE_URL', rtrim($basePath, '/'));
 
 function getDBConnection() {
     static $pdo = null;

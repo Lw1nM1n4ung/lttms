@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
                 <h4>Prerequisites</h4>
                 <ul style="margin-left: 1.5rem; color: var(--gray-500); font-size: 0.9rem;">
-                    <li>PHP 7.4+ with PDO MySQL extension</li>
+                    <li>PHP 8.0+ with PDO MySQL extension</li>
                     <li>MySQL 5.7+ or MariaDB 10.3+</li>
                     <li>Web server (Apache or PHP built-in server)</li>
                 </ul>

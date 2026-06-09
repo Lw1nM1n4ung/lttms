@@ -14,28 +14,13 @@ A three-tier PHP web application connecting tourists, travel agents, and adminis
 
 No framework — plain PHP with manual `require_once` includes.
 
-## Quick Start
-
-### Docker (recommended)
-
-```bash
-docker compose up -d --build    # http://localhost:8888
-docker compose down -v          # Stop + destroy DB
-```
-
-### XAMPP (Windows)
+## Quick Start (XAMPP on Windows)
 
 ```powershell
 .\setup.ps1                     # Auto-downloads XAMPP if missing, creates DB, seeds data
 ```
 
-### PHP Built-in Server
-
-```bash
-php -S localhost:8000           # Then open http://localhost:8000/setup.php
-```
-
-Run `setup.php` in the browser to initialize the database. Docker auto-loads `sql/schema.sql` on first start.
+Or manually: copy the project to `C:\xampp\htdocs\lttms\`, start Apache + MySQL from the XAMPP Control Panel, then open `http://localhost/lttms/setup.php` to initialize the database.
 
 ## Demo Accounts
 
@@ -65,7 +50,6 @@ lttms/
 ├── uploads/                 # packages/ nrc/ destinations/
 ├── setup.php                # Browser-based DB installer
 ├── setup.ps1                # Windows one-step XAMPP installer
-├── docker-compose.yml
 └── .htaccess                # Apache rewrite + security headers
 ```
 

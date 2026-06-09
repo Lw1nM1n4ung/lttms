@@ -3,7 +3,7 @@
 ## Comprehensive Project Documentation
 
 **Project Title:** Local Tourism and Travel Management System (LTTMS)
-**Technology Stack:** PHP 8.2, MySQL 8.0, HTML5/CSS3/JavaScript, Docker
+**Technology Stack:** PHP 8.2, MySQL 8.0, HTML5/CSS3/JavaScript, XAMPP
 **Architecture:** Three-Tier (Presentation, Business Logic, Data)
 **Version:** 1.0
 **Date:** April 2026
@@ -23,7 +23,7 @@
 9. [Security Implementation](#9-security-implementation)
 10. [Internationalization (i18n)](#10-internationalization-i18n)
 11. [Payment System](#11-payment-system)
-12. [Docker Deployment](#12-docker-deployment)
+12. [XAMPP Deployment](#12-xampp-deployment)
 13. [Key Code Patterns and Techniques](#13-key-code-patterns-and-techniques)
 14. [Testing and Quality Assurance](#14-testing-and-quality-assurance)
 15. [Project Statistics](#15-project-statistics)
@@ -145,7 +145,7 @@ Browser Response
 | **Database** | MySQL 8.0 | Relational data storage with InnoDB engine |
 | **Web Server** | Apache 2.4 | HTTP server with mod_rewrite and mod_headers |
 | **Frontend** | HTML5 / CSS3 / JavaScript | User interface and client-side interactions |
-| **Containerization** | Docker + Docker Compose | Development and deployment environment |
+| **Local Server** | XAMPP (Apache + MySQL) | Development and deployment environment |
 | **Fonts** | Google Fonts | Cormorant Garamond (display) + Outfit (body) |
 | **Payment** | KBZ Pay | Manual mobile payment with reference verification |
 
@@ -153,7 +153,7 @@ Browser Response
 
 - **PHP** - Widely taught in Myanmar universities, extensive documentation, mature ecosystem for web applications
 - **MySQL** - Industry-standard relational database, excellent PHP integration via PDO
-- **Docker** - Ensures consistent development/deployment environments, eliminates "works on my machine" problems
+- **XAMPP** - All-in-one Apache + MySQL + PHP stack for Windows, easy setup with the included `setup.ps1` script
 - **No frameworks** - Pure PHP demonstrates understanding of core web concepts (routing, sessions, CSRF, SQL) without framework abstraction
 
 ---
@@ -499,8 +499,7 @@ lttms/
 |-- logout.php                 # Session destruction
 |-- set-language.php           # Language switcher
 |-- setup.php                  # Initial setup script
-|-- Dockerfile                 # PHP 8.2 Apache image
-|-- docker-compose.yml         # Multi-container setup
+|-- setup.ps1                  # Windows XAMPP auto-setup script
 |-- .htaccess                  # URL rewriting rules
 ```
 
@@ -728,92 +727,50 @@ Agents configure their payment details through `agent/settings.php`:
 
 ---
 
-## 12. Docker Deployment
+## 12. XAMPP Deployment
 
-### Container Architecture
+### Requirements
 
-```
-+------------------------+     +------------------------+
-|     web container      |     |      db container      |
-|                        |     |                        |
-|  PHP 8.2 + Apache 2.4 |---->|  MySQL 8.0             |
-|                        |     |                        |
-|  Extensions:           |     |  Database: lttms_db    |
-|  - pdo_mysql           |     |  User: lttms_user      |
-|  - gd (image proc)     |     |  Charset: utf8mb4      |
-|                        |     |                        |
-|  Port: 8888 -> 80      |     |  Port: 3307 -> 3306    |
-+------------------------+     +------------------------+
-         |                              |
-         v                              v
-  ./  (bind mount)            lttms_mysql_data (volume)
+- Windows 10/11 with XAMPP installed (PHP 8.0+, Apache 2.4, MySQL 8.0)
+- Required PHP extensions: pdo_mysql, mysqli, mbstring, curl, gd, fileinfo
+
+### Automated Setup
+
+Run the included PowerShell script from the project directory:
+
+```powershell
+.\setup.ps1
 ```
 
-### Dockerfile
+The script will:
+1. Detect or download/install XAMPP
+2. Start Apache and MySQL services
+3. Create the `lttms_db` database and import schema + demo data
+4. Verify PHP extensions
+5. Create upload directories with proper permissions
+6. Open the app in the browser
 
-```dockerfile
-FROM php:8.2-apache
+### Manual Setup
 
-# Install PHP extensions for MySQL and image processing
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql mysqli gd
+1. Copy the project folder to `C:\xampp\htdocs\lttms\`
+2. Start Apache and MySQL from the XAMPP Control Panel
+3. Open `http://localhost/lttms/setup.php` in a browser
+4. Enter database credentials (default: root / empty password)
+5. Click "Install Database"
 
-# Enable Apache modules
-RUN a2enmod rewrite headers
+### Access
 
-# Configure document root and permissions
-COPY . /var/www/html/
-RUN chown -R www-data:www-data /var/www/html
+```
+http://localhost/lttms/
+
+Demo accounts:
+  Admin:  admin  / password
+  Agent:  agent1 / password
 ```
 
-### Docker Compose
+### BASE_URL Auto-Detection
 
-```yaml
-services:
-  web:
-    build: .
-    ports: ["0.0.0.0:8888:80"]
-    depends_on:
-      db:
-        condition: service_healthy     # Wait for MySQL to be ready
-    environment:
-      - DB_HOST=db
-      - DB_NAME=lttms_db
-      - DB_USER=lttms_user
-      - DB_PASS=lttms_password
-    volumes:
-      - .:/var/www/html               # Live code reload
-
-  db:
-    image: mysql:8.0
-    volumes:
-      - lttms_mysql_data:/var/lib/mysql
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql  # Auto-initialize
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      retries: 10
-```
-
-### Running the Application
-
-```bash
-# Start the application
-docker compose up -d --build
-
-# Access at http://localhost:8888
-
-# Demo accounts:
-#   Admin:  admin  / password
-#   Agent:  agent1 / password
-
-# Stop the application
-docker compose down
-
-# Reset database (destroy volume)
-docker compose down -v
-```
+The app automatically detects its subdirectory path (e.g., `/lttms`) by comparing `DOCUMENT_ROOT` against the project directory. This uses case-insensitive comparison for Windows path compatibility. No manual configuration is needed.
 
 ---
 
@@ -948,10 +905,6 @@ $pdo->commit();
 - High: 0
 - Medium: 2 (false positives - Snyk taint tracker limitation)
 - Low: 0
-
-**Container Security Scan:**
-- Application layer: 0 vulnerabilities
-- Base image (Debian): 2 medium severity (systemd, libxml2 in OS packages)
 
 ### 14.3 Vulnerabilities Fixed During Development
 

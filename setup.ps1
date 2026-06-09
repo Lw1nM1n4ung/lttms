@@ -327,7 +327,7 @@ $UploadDirs = @(
 
 # Root uploads .htaccess
 @"
-Deny from all
+Require all denied
 php_flag engine off
 "@ | Out-File -FilePath "$ProjectRoot\uploads\.htaccess" -Encoding ASCII -Force
 
@@ -336,10 +336,10 @@ foreach ($Dir in $UploadDirs) {
         New-Item -ItemType Directory -Path $Dir -Force | Out-Null
     }
     $HtContent = if ($Dir -match "\\nrc$") {
-        "Deny from all"
+        "Require all denied"
     } else {
 @"
-Allow from all
+Require all granted
 php_flag engine off
 "@
     }
